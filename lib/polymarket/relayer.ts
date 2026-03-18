@@ -68,7 +68,7 @@ export async function isSafeDeployed(
   try {
     const publicClient = createPublicClient({
       chain: polygon,
-      transport: http(process.env.NEXT_PUBLIC_POLYGON_RPC_URL || "https://polygon-rpc.com"),
+      transport: http(),
     })
     const code = await publicClient.getCode({ address: safeAddress as `0x${string}` })
     return !!code && code !== "0x"

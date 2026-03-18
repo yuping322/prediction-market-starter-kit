@@ -5,7 +5,7 @@ import { addRpcUrlOverrideToChain } from "@privy-io/chains"
 import { useTheme } from "next-themes"
 import { polygon } from "viem/chains"
 
-const POLYGON_RPC_URL = process.env.NEXT_PUBLIC_POLYGON_RPC_URL || "https://polygon-rpc.com"
+const POLYGON_RPC_URL = process.env.NEXT_PUBLIC_POLYGON_RPC_URL || "https://polygon.drpc.org"
 
 function PrivyProviderInner({ children }: { children: React.ReactNode }) {
   const { resolvedTheme } = useTheme()
