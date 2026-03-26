@@ -9,7 +9,12 @@
     "start": "next start",
     "lint": "eslint",
     "format": "prettier --write \"**/*.{ts,tsx}\"",
-    "typecheck": "tsc --noEmit"
+    "typecheck": "tsc --noEmit",
+    "bot:simulate": "tsx bot/sim/run-simulation.ts",
+    "bot:test": "tsx bot/sim/test-simulation.ts",
+    "bot:example:synthetic": "tsx bot/examples/run-synthetic-simulation.ts",
+    "bot:example:real": "tsx bot/examples/run-real-data-validation.ts",
+    "bot:test:all": "tsx --test bot/tests/*.test.ts"
   },
   "dependencies": {
     "@base-ui/react": "^1.3.0",
@@ -58,6 +63,7 @@
     "prettier": "^3.8.1",
     "prettier-plugin-tailwindcss": "^0.7.2",
     "tailwindcss": "^4.2.1",
+    "tsx": "^4.21.0",
     "typescript": "^5.9.3"
   }
 }

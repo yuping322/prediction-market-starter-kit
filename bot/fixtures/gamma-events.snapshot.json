@@ -1,0 +1,28 @@
+[
+  {
+    "id": "evt-1",
+    "title": "BTC above $70k by month end?",
+    "markets": [
+      {
+        "id": "mkt-100",
+        "outcomePrices": "[\"0.44\",\"0.53\"]",
+        "outcome_prices": "[\"0.44\",\"0.53\"]",
+        "volume_24hr": 182340,
+        "volume": 984230
+      }
+    ]
+  },
+  {
+    "id": "evt-2",
+    "title": "Fed cut in next meeting?",
+    "markets": [
+      {
+        "id": "mkt-200",
+        "outcomePrices": "[\"0.39\",\"0.58\"]",
+        "outcome_prices": "[\"0.39\",\"0.58\"]",
+        "volume_24hr": 91231,
+        "volume": 581220
+      }
+    ]
+  }
+]
