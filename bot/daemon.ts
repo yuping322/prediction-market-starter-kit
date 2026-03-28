@@ -1,181 +1,250 @@
 /**
- * Bot Daemon — single long-running process that orchestrates all scheduled tasks.
+ * Bot Daemon — single long-running process with a serial pipeline.
  *
- * Processes:
- *   1. Paper Trading   — every 5 minutes, scan markets & execute paper trades
- *   2. Position Scanner — every hour, mark-to-market & alert check
- *   3. Auto-Tune        — every 24 hours, adjust config based on performance
+ * Each cycle (every 5 minutes):
+ *   Step 1. Fetch latest market data
+ *   Step 2. Mark-to-market existing positions + alert check
+ *   Step 3. Scan for arbitrage opportunities
+ *   Step 4. Execute paper trades
+ *   Step 5. Save session state
+ *
+ * Additionally:
+ *   - Auto-tune runs every 12 cycles (~1 hour) to adjust config params
  *
  * Usage:
  *   pnpm bot:daemon          # run in foreground
  *   nohup pnpm bot:daemon &  # run in background
- *
- * Graceful shutdown: Ctrl+C (SIGINT) or SIGTERM
  */
 
-import { runPaperTrading } from './paper/trader'
-import { loadSession, saveSession } from './paper/persistence'
-import { autotune } from './config/autotune'
-import { loadConfig, resetConfigCache } from './config'
 import { fetchRealTicks } from './integration/real-data'
+import { tickToMarketEvents, type SyntheticTick } from './ingest/adapter'
+import { applyBookEvent, getDefaultBookState, type BookState } from './ingest/orderbook'
+import { FeatureEngine } from './features/engine'
+import { generateOpportunity } from './signal'
+import { preTradeCheck } from './risk/pre_trade'
+import { kellySize } from './execution/kelly'
+import { stoikovPriceAdjust } from './execution/stoikov'
+import { monteCarloPnl } from './montecarlo/sim'
 import { PaperPortfolio } from './paper/portfolio'
+import { generateWallet } from './paper/wallet'
+import { saveSession, loadSession } from './paper/persistence'
+import { loadConfig, resetConfigCache, type BotConfig } from './config'
+import { autotune } from './config/autotune'
 
-// Intervals in ms
-const TRADE_INTERVAL = 5 * 60 * 1000   // 5 minutes
-const SCAN_INTERVAL = 60 * 60 * 1000   // 1 hour
-const TUNE_INTERVAL = 24 * 60 * 60 * 1000 // 24 hours
+const CYCLE_INTERVAL = 5 * 60 * 1000 // 5 minutes
+const TUNE_EVERY_N_CYCLES = 12        // auto-tune every ~1 hour
 
 let running = true
-let privateKey: string | undefined
 
 function ts(): string {
   return new Date().toISOString().replace('T', ' ').slice(0, 19)
 }
 
-// --- Task 1: Paper Trading ---
-async function tradeOnce(): Promise<void> {
-  console.log(`\n[${ts()}] === TRADE CYCLE ===`)
-  try {
-    const result = await runPaperTrading({
-      privateKey, // reuse same wallet across cycles
-    })
-    // Persist wallet key for next cycle
-    if (!privateKey) {
-      privateKey = result.wallet.address // we need the actual private key from session
-      const session = loadSession()
-      if (session) privateKey = session.wallet.privateKey
-    }
-
-    const trades = result.orders.filter((o) => o.status !== 'REJECTED').length
-    const arb = result.portfolio.lockedArbProfit
-    const slip = result.portfolio.totalSlippageCost
-    console.log(
-      `  Trades: ${trades} | Arb: $${arb.toFixed(4)} | Slip: $${slip.toFixed(4)} | Net: $${(arb - slip).toFixed(4)}`,
-    )
-  } catch (err) {
-    console.error(`  [ERROR] Trade cycle failed:`, err instanceof Error ? err.message : err)
-  }
+function sleep(ms: number): Promise<void> {
+  return new Promise((resolve) => setTimeout(resolve, ms))
 }
 
-// --- Task 2: Position Scanner ---
-async function scanOnce(): Promise<void> {
-  console.log(`\n[${ts()}] === POSITION SCAN ===`)
-  try {
-    const session = loadSession()
-    if (!session) {
-      console.log('  No session — skipping scan')
-      return
+/**
+ * One complete pipeline cycle: fetch → scan → trade → save
+ */
+async function runCycle(
+  portfolio: PaperPortfolio,
+  featureEngine: FeatureEngine,
+  config: BotConfig,
+): Promise<{ trades: number; skips: number; blocks: number; alerts: string[] }> {
+  const ticks = await fetchRealTicks(config.data.tickLimit)
+  if (ticks.length === 0) return { trades: 0, skips: 0, blocks: 0, alerts: [] }
+
+  let book: BookState = getDefaultBookState()
+  let trades = 0
+  let skips = 0
+  let blocks = 0
+  const alerts: string[] = []
+
+  // --- Step 1 & 2: Fetch data + Mark-to-market ---
+  for (const tick of ticks) {
+    portfolio.markToMarket(tick.marketId, tick.yesBid, tick.noBid)
+  }
+
+  // Drawdown alert check
+  const snap = portfolio.snapshot()
+  if (snap.drawdownPct >= Math.abs(config.risk.maxDrawdownPct)) {
+    alerts.push(`[CRIT] Drawdown ${snap.drawdownPct.toFixed(2)}% exceeds ${config.risk.maxDrawdownPct}% limit!`)
+  } else if (snap.drawdownPct >= Math.abs(config.risk.intradayStopPct)) {
+    alerts.push(`[WARN] Drawdown ${snap.drawdownPct.toFixed(2)}% approaching limit`)
+  }
+
+  // Concentration check
+  for (const pos of portfolio.positions.values()) {
+    const weight = ((pos.size * pos.currentPrice) / Math.max(1, snap.equity)) * 100
+    if (weight > config.risk.maxPositionPct) {
+      alerts.push(`[WARN] ${pos.marketId}:${pos.side} concentration ${weight.toFixed(1)}% > ${config.risk.maxPositionPct}%`)
+    }
+  }
+
+  // --- Step 3 & 4: Scan opportunities + Execute trades ---
+  for (const tick of ticks) {
+    const events = tickToMarketEvents(tick)
+    for (const evt of events) {
+      book = applyBookEvent(book, evt)
     }
 
-    const config = loadConfig()
-    const portfolio = new PaperPortfolio(session.portfolio.initialEquity)
+    const feature = featureEngine.build(tick.marketId, tick.ts, book, events)
+    const opp = generateOpportunity(feature, book, tick.ts, config.signal.costBps, config.signal.minEvBps)
+
+    if (!opp || opp.confidence < config.signal.confidenceThreshold) {
+      skips += 1
+      continue
+    }
+
+    const decision = preTradeCheck(opp, portfolio.openNotional, config.portfolio.maxOpenNotional)
+    if (!decision.allow) {
+      blocks += 1
+      continue
+    }
+
+    const pnlPct = (portfolio.totalPnl / Math.max(1, portfolio.equity)) * 100
+    if (pnlPct <= config.risk.intradayStopPct || portfolio.drawdownPct >= Math.abs(config.risk.maxDrawdownPct)) {
+      blocks += 1
+      alerts.push(`[STOP] Circuit breaker active — no new trades`)
+      break
+    }
+
+    const size = kellySize(opp.evBps, opp.confidence, portfolio.equity, config.execution.kellyCap)
+    if (size < 0.01) { skips += 1; continue }
+
+    const inventory = Array.from(portfolio.positions.values()).reduce(
+      (acc, p) => acc + (p.side === 'YES' ? p.size : -p.size), 0,
+    )
+    const adjYes = stoikovPriceAdjust(book.yesAsk, inventory, config.execution.stoikovRiskAversion)
+    const adjNo = stoikovPriceAdjust(book.noAsk, -inventory, config.execution.stoikovRiskAversion)
+
+    portfolio.executeTrade(tick.marketId, 'YES', adjYes, size / 2, tick.ts,
+      config.execution.slippageBps, config.execution.partialFillBaseRate, config.execution.partialFillSizeDecay)
+    portfolio.executeTrade(tick.marketId, 'NO', adjNo, size / 2, tick.ts,
+      config.execution.slippageBps, config.execution.partialFillBaseRate, config.execution.partialFillSizeDecay)
+
+    trades += 1
+  }
+
+  return { trades, skips, blocks, alerts }
+}
+
+async function main(): Promise<void> {
+  console.log(`[${ts()}] Bot Daemon starting`)
+  console.log(`  Cycle interval:  ${CYCLE_INTERVAL / 1000}s (${CYCLE_INTERVAL / 60000}min)`)
+  console.log(`  Auto-tune every: ${TUNE_EVERY_N_CYCLES} cycles (~${TUNE_EVERY_N_CYCLES * 5}min)`)
+  console.log(`  Press Ctrl+C to stop\n`)
+
+  process.on('SIGINT', () => { console.log(`\n[${ts()}] Shutting down...`); running = false })
+  process.on('SIGTERM', () => { console.log(`\n[${ts()}] Shutting down...`); running = false })
+
+  // Restore or create wallet + portfolio
+  let config = loadConfig()
+  const session = loadSession()
+  let privateKey: string
+  let walletAddress: string
+  let safeAddress: string
+
+  const portfolio = new PaperPortfolio(config.portfolio.initialEquity)
+
+  if (session) {
+    privateKey = session.wallet.privateKey
+    walletAddress = session.wallet.address
+    safeAddress = session.wallet.safeAddress
     portfolio.cashBalance = session.portfolio.cash
     portfolio.peakEquity = session.portfolio.peakEquity
     for (const pos of session.positions) {
       portfolio.positions.set(`${pos.marketId}:${pos.side}`, { ...pos })
     }
-
-    const ticks = await fetchRealTicks(config.data.tickLimit)
-    let updates = 0
-    for (const tick of ticks) {
-      if (portfolio.positions.has(`${tick.marketId}:YES`) || portfolio.positions.has(`${tick.marketId}:NO`)) {
-        portfolio.markToMarket(tick.marketId, tick.yesBid, tick.noBid)
-        updates += 1
-      }
+    for (const order of session.orders) {
+      portfolio.orders.push(order)
     }
-
-    const snap = portfolio.snapshot()
-    console.log(
-      `  Equity: $${snap.equity.toFixed(2)} | DD: ${snap.drawdownPct.toFixed(2)}% | ` +
-        `Positions: ${snap.positionCount} | Updates: ${updates}`,
-    )
-
-    // Alerts
-    if (snap.drawdownPct >= Math.abs(config.risk.maxDrawdownPct)) {
-      console.log(`  [CRIT] Drawdown ${snap.drawdownPct.toFixed(2)}% exceeds max!`)
-    } else if (snap.drawdownPct >= Math.abs(config.risk.intradayStopPct)) {
-      console.log(`  [WARN] Drawdown ${snap.drawdownPct.toFixed(2)}% approaching limit`)
-    }
-  } catch (err) {
-    console.error(`  [ERROR] Scan failed:`, err instanceof Error ? err.message : err)
+    console.log(`  Restored session: ${walletAddress} (${portfolio.positions.size} positions)`)
+  } else {
+    const wallet = generateWallet()
+    privateKey = wallet.privateKey
+    walletAddress = wallet.address
+    safeAddress = wallet.safeAddress
+    console.log(`  New wallet: ${walletAddress}`)
   }
-}
 
-// --- Task 3: Auto-Tune ---
-function tuneOnce(): void {
-  console.log(`\n[${ts()}] === AUTO-TUNE ===`)
-  try {
-    resetConfigCache()
-    const report = autotune()
-    if (report.adjustments.length === 0) {
-      console.log('  No adjustments needed')
-    } else {
-      for (const adj of report.adjustments) {
-        console.log(`  ${adj.param}: ${adj.old} → ${adj.new} (${adj.reason})`)
-      }
-    }
-    console.log(
-      `  Market: spread=${(report.marketConditions.avgSpread * 10_000).toFixed(1)}bps ` +
-        `hitRate=${(report.marketConditions.arbHitRate * 100).toFixed(0)}% ` +
-        `avgEV=${report.marketConditions.avgEvBps.toFixed(1)}bps`,
-    )
-  } catch (err) {
-    console.error(`  [ERROR] Tune failed:`, err instanceof Error ? err.message : err)
-  }
-}
+  const featureEngine = new FeatureEngine()
+  let cycleCount = 0
 
-// --- Scheduler ---
-function sleep(ms: number): Promise<void> {
-  return new Promise((resolve) => setTimeout(resolve, ms))
-}
-
-async function main(): Promise<void> {
-  console.log(`[${ts()}] Bot Daemon starting`)
-  console.log(`  Trade interval:  ${TRADE_INTERVAL / 1000}s (${TRADE_INTERVAL / 60000}min)`)
-  console.log(`  Scan interval:   ${SCAN_INTERVAL / 1000}s (${SCAN_INTERVAL / 3600000}h)`)
-  console.log(`  Tune interval:   ${TUNE_INTERVAL / 1000}s (${TUNE_INTERVAL / 86400000}d)`)
-  console.log(`  Press Ctrl+C to stop\n`)
-
-  // Graceful shutdown
-  process.on('SIGINT', () => {
-    console.log(`\n[${ts()}] Shutting down...`)
-    running = false
-  })
-  process.on('SIGTERM', () => {
-    console.log(`\n[${ts()}] Shutting down...`)
-    running = false
-  })
-
-  // Run all tasks immediately on startup
-  await tradeOnce()
-  await scanOnce()
-  tuneOnce()
-
-  let lastTrade = Date.now()
-  let lastScan = Date.now()
-  let lastTune = Date.now()
-
+  // Main loop
   while (running) {
-    await sleep(10_000) // check every 10 seconds
-    const now = Date.now()
+    cycleCount += 1
+    console.log(`\n[${ts()}] ── Cycle #${cycleCount} ──`)
 
-    if (now - lastTrade >= TRADE_INTERVAL) {
-      await tradeOnce()
-      lastTrade = now
+    // Step 1-4: Full pipeline
+    const result = await runCycle(portfolio, featureEngine, config)
+    const snap = portfolio.snapshot()
+
+    console.log(
+      `  Market: ${result.trades} trades, ${result.skips} skips, ${result.blocks} blocks`,
+    )
+    console.log(
+      `  Portfolio: equity=$${snap.equity.toFixed(2)} cash=$${snap.cash.toFixed(2)} ` +
+      `arb=$${snap.lockedArbProfit.toFixed(4)} slip=$${snap.totalSlippageCost.toFixed(4)} ` +
+      `DD=${snap.drawdownPct.toFixed(2)}%`,
+    )
+
+    if (result.alerts.length > 0) {
+      for (const alert of result.alerts) {
+        console.log(`  ${alert}`)
+      }
     }
 
-    if (now - lastScan >= SCAN_INTERVAL) {
-      await scanOnce()
-      lastScan = now
+    // Step 5: Save state
+    const filledOrders = portfolio.orders.filter((o) => o.status !== 'REJECTED')
+    saveSession({
+      wallet: { address: walletAddress, safeAddress, privateKey },
+      updatedAt: new Date().toISOString(),
+      portfolio: {
+        initialEquity: config.portfolio.initialEquity,
+        cash: portfolio.cashBalance,
+        equity: portfolio.equity,
+        peakEquity: portfolio.peakEquity,
+      },
+      positions: Array.from(portfolio.positions.values()),
+      orders: portfolio.orders,
+      stats: {
+        totalTrades: portfolio.orders.length,
+        fillRate: filledOrders.length / Math.max(1, portfolio.orders.length),
+        totalArbProfit: portfolio.lockedArbProfit,
+        totalSlippageCost: portfolio.totalSlippageCost,
+        sessionsRun: cycleCount,
+      },
+    })
+
+    // Auto-tune periodically
+    if (cycleCount % TUNE_EVERY_N_CYCLES === 0) {
+      console.log(`\n[${ts()}] ── Auto-Tune ──`)
+      resetConfigCache()
+      const report = autotune()
+      if (report.adjustments.length === 0) {
+        console.log('  No adjustments needed')
+      } else {
+        for (const adj of report.adjustments) {
+          console.log(`  ${adj.param}: ${adj.old} → ${adj.new}`)
+        }
+      }
+      resetConfigCache()
+      config = loadConfig()
     }
 
-    if (now - lastTune >= TUNE_INTERVAL) {
-      tuneOnce()
-      lastTune = now
+    // Wait for next cycle
+    if (running) {
+      console.log(`  Next cycle in ${CYCLE_INTERVAL / 1000}s...`)
+      const deadline = Date.now() + CYCLE_INTERVAL
+      while (running && Date.now() < deadline) {
+        await sleep(1000)
+      }
     }
   }
 
-  console.log(`[${ts()}] Daemon stopped`)
+  console.log(`[${ts()}] Daemon stopped after ${cycleCount} cycles`)
 }
 
 void main()
