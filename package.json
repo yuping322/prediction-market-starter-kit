@@ -14,7 +14,11 @@
     "bot:test": "tsx bot/sim/test-simulation.ts",
     "bot:example:synthetic": "tsx bot/examples/run-synthetic-simulation.ts",
     "bot:example:real": "tsx bot/examples/run-real-data-validation.ts",
-    "bot:test:all": "tsx --test bot/tests/*.test.ts"
+    "bot:test:all": "tsx --test bot/tests/*.test.ts",
+    "bot:paper": "tsx bot/examples/run-paper-trading.ts",
+    "bot:scan": "tsx bot/paper/scanner.ts",
+    "bot:autotune": "tsx bot/config/autotune.ts",
+    "bot:daemon": "tsx bot/daemon.ts"
   },
   "dependencies": {
     "@hugeicons/core-free-icons": "^4.0.0",

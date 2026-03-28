@@ -1,0 +1,27 @@
+{
+  "portfolio": {
+    "initialEquity": 10000,
+    "maxOpenNotional": 2000
+  },
+  "execution": {
+    "kellyCap": 0.02,
+    "stoikovRiskAversion": 0.002,
+    "slippageBps": 50,
+    "partialFillBaseRate": 0.5,
+    "partialFillSizeDecay": 0.001
+  },
+  "signal": {
+    "costBps": 20,
+    "minEvBps": 5,
+    "confidenceThreshold": 0.1
+  },
+  "risk": {
+    "intradayStopPct": -2,
+    "maxDrawdownPct": -4,
+    "maxPositionPct": 25
+  },
+  "data": {
+    "tickLimit": 50,
+    "spreadOverride": 0.01
+  }
+}
