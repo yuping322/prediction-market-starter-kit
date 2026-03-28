@@ -1,0 +1,625 @@
+{
+  "wallet": {
+    "address": "0xA8A923B451e2167d583eB222658866602c7db6af",
+    "safeAddress": "0xEc4cc226c786034B607C197656593faF7A7143c8",
+    "privateKey": "0xf64ca9b8154cea11c03d7672ed8aef09745f7a02c3bfcec5ac6e21d356aac02e"
+  },
+  "updatedAt": "2026-03-28T12:20:07.136Z",
+  "portfolio": {
+    "initialEquity": 10000,
+    "cash": 9902.69389,
+    "equity": 10000,
+    "peakEquity": 10000.000000000004
+  },
+  "positions": [
+    {
+      "marketId": "mkt-fed-cut",
+      "side": "YES",
+      "size": 2.38,
+      "avgEntry": 0.40199999999999997,
+      "currentPrice": 0.40199999999999997,
+      "unrealizedPnl": 0
+    },
+    {
+      "marketId": "mkt-fed-cut",
+      "side": "NO",
+      "size": 2.38,
+      "avgEntry": 0.5929499999999999,
+      "currentPrice": 0.5929499999999999,
+      "unrealizedPnl": 0
+    },
+    {
+      "marketId": "mkt-eth-5k",
+      "side": "YES",
+      "size": 5.07,
+      "avgEntry": 0.29145,
+      "currentPrice": 0.29145,
+      "unrealizedPnl": 0
+    },
+    {
+      "marketId": "mkt-eth-5k",
+      "side": "NO",
+      "size": 5.07,
+      "avgEntry": 0.7034999999999999,
+      "currentPrice": 0.7034999999999999,
+      "unrealizedPnl": 0
+    },
+    {
+      "marketId": "mkt-house-gop",
+      "side": "YES",
+      "size": 3.12,
+      "avgEntry": 0.6230999999999999,
+      "currentPrice": 0.6230999999999999,
+      "unrealizedPnl": 0
+    },
+    {
+      "marketId": "mkt-house-gop",
+      "side": "NO",
+      "size": 3.12,
+      "avgEntry": 0.37184999999999996,
+      "currentPrice": 0.37184999999999996,
+      "unrealizedPnl": 0
+    },
+    {
+      "marketId": "mkt-ai-reg-bill",
+      "side": "YES",
+      "size": 3.85,
+      "avgEntry": 0.3417,
+      "currentPrice": 0.3417,
+      "unrealizedPnl": 0
+    },
+    {
+      "marketId": "mkt-ai-reg-bill",
+      "side": "NO",
+      "size": 3.85,
+      "avgEntry": 0.65325,
+      "currentPrice": 0.65325,
+      "unrealizedPnl": 0
+    },
+    {
+      "marketId": "mkt-sp500-above-6500",
+      "side": "YES",
+      "size": 4.34,
+      "avgEntry": 0.3216,
+      "currentPrice": 0.3216,
+      "unrealizedPnl": 0
+    },
+    {
+      "marketId": "mkt-sp500-above-6500",
+      "side": "NO",
+      "size": 4.34,
+      "avgEntry": 0.67335,
+      "currentPrice": 0.67335,
+      "unrealizedPnl": 0
+    },
+    {
+      "marketId": "mkt-sp500-above-7000",
+      "side": "YES",
+      "size": 8.88,
+      "avgEntry": 0.13065,
+      "currentPrice": 0.13065,
+      "unrealizedPnl": 0
+    },
+    {
+      "marketId": "mkt-sp500-above-7000",
+      "side": "NO",
+      "size": 8.88,
+      "avgEntry": 0.8642999999999998,
+      "currentPrice": 0.8642999999999998,
+      "unrealizedPnl": 0
+    },
+    {
+      "marketId": "mkt-wc-brazil",
+      "side": "YES",
+      "size": 7.47,
+      "avgEntry": 0.19094999999999998,
+      "currentPrice": 0.19094999999999998,
+      "unrealizedPnl": 0
+    },
+    {
+      "marketId": "mkt-wc-brazil",
+      "side": "NO",
+      "size": 7.47,
+      "avgEntry": 0.8039999999999999,
+      "currentPrice": 0.8039999999999999,
+      "unrealizedPnl": 0
+    },
+    {
+      "marketId": "mkt-wc-france",
+      "side": "YES",
+      "size": 8.18,
+      "avgEntry": 0.1608,
+      "currentPrice": 0.1608,
+      "unrealizedPnl": 0
+    },
+    {
+      "marketId": "mkt-wc-france",
+      "side": "NO",
+      "size": 8.18,
+      "avgEntry": 0.8341499999999998,
+      "currentPrice": 0.8341499999999998,
+      "unrealizedPnl": 0
+    },
+    {
+      "marketId": "mkt-wc-argentina",
+      "side": "YES",
+      "size": 8.41,
+      "avgEntry": 0.15075,
+      "currentPrice": 0.15075,
+      "unrealizedPnl": 0
+    },
+    {
+      "marketId": "mkt-wc-argentina",
+      "side": "NO",
+      "size": 8.41,
+      "avgEntry": 0.8441999999999998,
+      "currentPrice": 0.8441999999999998,
+      "unrealizedPnl": 0
+    },
+    {
+      "marketId": "mkt-wc-england",
+      "side": "YES",
+      "size": 9.35,
+      "avgEntry": 0.11055,
+      "currentPrice": 0.11055,
+      "unrealizedPnl": 0
+    },
+    {
+      "marketId": "mkt-wc-england",
+      "side": "NO",
+      "size": 9.35,
+      "avgEntry": 0.8844,
+      "currentPrice": 0.8844,
+      "unrealizedPnl": 0
+    },
+    {
+      "marketId": "mkt-wc-germany",
+      "side": "YES",
+      "size": 9.58,
+      "avgEntry": 0.10049999999999998,
+      "currentPrice": 0.10049999999999998,
+      "unrealizedPnl": 0
+    },
+    {
+      "marketId": "mkt-wc-germany",
+      "side": "NO",
+      "size": 9.58,
+      "avgEntry": 0.89445,
+      "currentPrice": 0.89445,
+      "unrealizedPnl": 0
+    },
+    {
+      "marketId": "mkt-climate-record",
+      "side": "YES",
+      "size": 3.36,
+      "avgEntry": 0.63315,
+      "currentPrice": 0.63315,
+      "unrealizedPnl": 0
+    },
+    {
+      "marketId": "mkt-climate-record",
+      "side": "NO",
+      "size": 3.36,
+      "avgEntry": 0.36179999999999995,
+      "currentPrice": 0.36179999999999995,
+      "unrealizedPnl": 0
+    },
+    {
+      "marketId": "mkt-sol-500",
+      "side": "YES",
+      "size": 6.52,
+      "avgEntry": 0.23115,
+      "currentPrice": 0.23115,
+      "unrealizedPnl": 0
+    },
+    {
+      "marketId": "mkt-sol-500",
+      "side": "NO",
+      "size": 6.52,
+      "avgEntry": 0.7637999999999999,
+      "currentPrice": 0.7637999999999999,
+      "unrealizedPnl": 0
+    },
+    {
+      "marketId": "mkt-meta-layoffs",
+      "side": "YES",
+      "size": 8.18,
+      "avgEntry": 0.1608,
+      "currentPrice": 0.1608,
+      "unrealizedPnl": 0
+    },
+    {
+      "marketId": "mkt-meta-layoffs",
+      "side": "NO",
+      "size": 8.18,
+      "avgEntry": 0.8341499999999998,
+      "currentPrice": 0.8341499999999998,
+      "unrealizedPnl": 0
+    },
+    {
+      "marketId": "mkt-google-layoffs",
+      "side": "YES",
+      "size": 9.11,
+      "avgEntry": 0.12059999999999998,
+      "currentPrice": 0.12059999999999998,
+      "unrealizedPnl": 0
+    },
+    {
+      "marketId": "mkt-google-layoffs",
+      "side": "NO",
+      "size": 9.11,
+      "avgEntry": 0.8743499999999998,
+      "currentPrice": 0.8743499999999998,
+      "unrealizedPnl": 0
+    }
+  ],
+  "orders": [
+    {
+      "id": "paper-1",
+      "ts": 2,
+      "marketId": "mkt-fed-cut",
+      "side": "YES",
+      "action": "BUY",
+      "price": 0.40199999999999997,
+      "size": 4.800000000000005,
+      "status": "PARTIAL",
+      "filledSize": 2.38,
+      "pnl": 0
+    },
+    {
+      "id": "paper-2",
+      "ts": 2,
+      "marketId": "mkt-fed-cut",
+      "side": "NO",
+      "action": "BUY",
+      "price": 0.5929499999999999,
+      "size": 4.800000000000005,
+      "status": "PARTIAL",
+      "filledSize": 2.38,
+      "pnl": 0
+    },
+    {
+      "id": "paper-3",
+      "ts": 3,
+      "marketId": "mkt-eth-5k",
+      "side": "YES",
+      "action": "BUY",
+      "price": 0.29145,
+      "size": 10.357894736842114,
+      "status": "PARTIAL",
+      "filledSize": 5.07,
+      "pnl": 0
+    },
+    {
+      "id": "paper-4",
+      "ts": 3,
+      "marketId": "mkt-eth-5k",
+      "side": "NO",
+      "action": "BUY",
+      "price": 0.7034999999999999,
+      "size": 10.357894736842114,
+      "status": "PARTIAL",
+      "filledSize": 5.07,
+      "pnl": 0
+    },
+    {
+      "id": "paper-5",
+      "ts": 5,
+      "marketId": "mkt-house-gop",
+      "side": "YES",
+      "action": "BUY",
+      "price": 0.6230999999999999,
+      "size": 6.31578947368422,
+      "status": "PARTIAL",
+      "filledSize": 3.12,
+      "pnl": 0
+    },
+    {
+      "id": "paper-6",
+      "ts": 5,
+      "marketId": "mkt-house-gop",
+      "side": "NO",
+      "action": "BUY",
+      "price": 0.37184999999999996,
+      "size": 6.31578947368422,
+      "status": "PARTIAL",
+      "filledSize": 3.12,
+      "pnl": 0
+    },
+    {
+      "id": "paper-7",
+      "ts": 6,
+      "marketId": "mkt-ai-reg-bill",
+      "side": "YES",
+      "action": "BUY",
+      "price": 0.3417,
+      "size": 7.83157894736843,
+      "status": "PARTIAL",
+      "filledSize": 3.85,
+      "pnl": 0
+    },
+    {
+      "id": "paper-8",
+      "ts": 6,
+      "marketId": "mkt-ai-reg-bill",
+      "side": "NO",
+      "action": "BUY",
+      "price": 0.65325,
+      "size": 7.83157894736843,
+      "status": "PARTIAL",
+      "filledSize": 3.85,
+      "pnl": 0
+    },
+    {
+      "id": "paper-9",
+      "ts": 8,
+      "marketId": "mkt-sp500-above-6500",
+      "side": "YES",
+      "action": "BUY",
+      "price": 0.3216,
+      "size": 8.842105263157906,
+      "status": "PARTIAL",
+      "filledSize": 4.34,
+      "pnl": 0
+    },
+    {
+      "id": "paper-10",
+      "ts": 8,
+      "marketId": "mkt-sp500-above-6500",
+      "side": "NO",
+      "action": "BUY",
+      "price": 0.67335,
+      "size": 8.842105263157906,
+      "status": "PARTIAL",
+      "filledSize": 4.34,
+      "pnl": 0
+    },
+    {
+      "id": "paper-11",
+      "ts": 9,
+      "marketId": "mkt-sp500-above-7000",
+      "side": "YES",
+      "action": "BUY",
+      "price": 0.13065,
+      "size": 18.44210526315792,
+      "status": "PARTIAL",
+      "filledSize": 8.88,
+      "pnl": 0
+    },
+    {
+      "id": "paper-12",
+      "ts": 9,
+      "marketId": "mkt-sp500-above-7000",
+      "side": "NO",
+      "action": "BUY",
+      "price": 0.8642999999999998,
+      "size": 18.44210526315792,
+      "status": "PARTIAL",
+      "filledSize": 8.88,
+      "pnl": 0
+    },
+    {
+      "id": "paper-13",
+      "ts": 10,
+      "marketId": "mkt-wc-brazil",
+      "side": "YES",
+      "action": "BUY",
+      "price": 0.19094999999999998,
+      "size": 15.410526315789498,
+      "status": "PARTIAL",
+      "filledSize": 7.47,
+      "pnl": 0
+    },
+    {
+      "id": "paper-14",
+      "ts": 10,
+      "marketId": "mkt-wc-brazil",
+      "side": "NO",
+      "action": "BUY",
+      "price": 0.8039999999999999,
+      "size": 15.410526315789498,
+      "status": "PARTIAL",
+      "filledSize": 7.47,
+      "pnl": 0
+    },
+    {
+      "id": "paper-15",
+      "ts": 11,
+      "marketId": "mkt-wc-france",
+      "side": "YES",
+      "action": "BUY",
+      "price": 0.1608,
+      "size": 16.926315789473705,
+      "status": "PARTIAL",
+      "filledSize": 8.18,
+      "pnl": 0
+    },
+    {
+      "id": "paper-16",
+      "ts": 11,
+      "marketId": "mkt-wc-france",
+      "side": "NO",
+      "action": "BUY",
+      "price": 0.8341499999999998,
+      "size": 16.926315789473705,
+      "status": "PARTIAL",
+      "filledSize": 8.18,
+      "pnl": 0
+    },
+    {
+      "id": "paper-17",
+      "ts": 12,
+      "marketId": "mkt-wc-argentina",
+      "side": "YES",
+      "action": "BUY",
+      "price": 0.15075,
+      "size": 17.431578947368443,
+      "status": "PARTIAL",
+      "filledSize": 8.41,
+      "pnl": 0
+    },
+    {
+      "id": "paper-18",
+      "ts": 12,
+      "marketId": "mkt-wc-argentina",
+      "side": "NO",
+      "action": "BUY",
+      "price": 0.8441999999999998,
+      "size": 17.431578947368443,
+      "status": "PARTIAL",
+      "filledSize": 8.41,
+      "pnl": 0
+    },
+    {
+      "id": "paper-19",
+      "ts": 13,
+      "marketId": "mkt-wc-england",
+      "side": "YES",
+      "action": "BUY",
+      "price": 0.11055,
+      "size": 19.452631578947397,
+      "status": "PARTIAL",
+      "filledSize": 9.35,
+      "pnl": 0
+    },
+    {
+      "id": "paper-20",
+      "ts": 13,
+      "marketId": "mkt-wc-england",
+      "side": "NO",
+      "action": "BUY",
+      "price": 0.8844,
+      "size": 19.452631578947397,
+      "status": "PARTIAL",
+      "filledSize": 9.35,
+      "pnl": 0
+    },
+    {
+      "id": "paper-21",
+      "ts": 14,
+      "marketId": "mkt-wc-germany",
+      "side": "YES",
+      "action": "BUY",
+      "price": 0.10049999999999998,
+      "size": 19.957894736842125,
+      "status": "PARTIAL",
+      "filledSize": 9.58,
+      "pnl": 0
+    },
+    {
+      "id": "paper-22",
+      "ts": 14,
+      "marketId": "mkt-wc-germany",
+      "side": "NO",
+      "action": "BUY",
+      "price": 0.89445,
+      "size": 19.957894736842125,
+      "status": "PARTIAL",
+      "filledSize": 9.58,
+      "pnl": 0
+    },
+    {
+      "id": "paper-23",
+      "ts": 15,
+      "marketId": "mkt-climate-record",
+      "side": "YES",
+      "action": "BUY",
+      "price": 0.63315,
+      "size": 6.8210526315789535,
+      "status": "PARTIAL",
+      "filledSize": 3.36,
+      "pnl": 0
+    },
+    {
+      "id": "paper-24",
+      "ts": 15,
+      "marketId": "mkt-climate-record",
+      "side": "NO",
+      "action": "BUY",
+      "price": 0.36179999999999995,
+      "size": 6.8210526315789535,
+      "status": "PARTIAL",
+      "filledSize": 3.36,
+      "pnl": 0
+    },
+    {
+      "id": "paper-25",
+      "ts": 16,
+      "marketId": "mkt-sol-500",
+      "side": "YES",
+      "action": "BUY",
+      "price": 0.23115,
+      "size": 13.389473684210547,
+      "status": "PARTIAL",
+      "filledSize": 6.52,
+      "pnl": 0
+    },
+    {
+      "id": "paper-26",
+      "ts": 16,
+      "marketId": "mkt-sol-500",
+      "side": "NO",
+      "action": "BUY",
+      "price": 0.7637999999999999,
+      "size": 13.389473684210547,
+      "status": "PARTIAL",
+      "filledSize": 6.52,
+      "pnl": 0
+    },
+    {
+      "id": "paper-27",
+      "ts": 17,
+      "marketId": "mkt-meta-layoffs",
+      "side": "YES",
+      "action": "BUY",
+      "price": 0.1608,
+      "size": 16.9263157894737,
+      "status": "PARTIAL",
+      "filledSize": 8.18,
+      "pnl": 0
+    },
+    {
+      "id": "paper-28",
+      "ts": 17,
+      "marketId": "mkt-meta-layoffs",
+      "side": "NO",
+      "action": "BUY",
+      "price": 0.8341499999999998,
+      "size": 16.9263157894737,
+      "status": "PARTIAL",
+      "filledSize": 8.18,
+      "pnl": 0
+    },
+    {
+      "id": "paper-29",
+      "ts": 18,
+      "marketId": "mkt-google-layoffs",
+      "side": "YES",
+      "action": "BUY",
+      "price": 0.12059999999999998,
+      "size": 18.94736842105265,
+      "status": "PARTIAL",
+      "filledSize": 9.11,
+      "pnl": 0
+    },
+    {
+      "id": "paper-30",
+      "ts": 18,
+      "marketId": "mkt-google-layoffs",
+      "side": "NO",
+      "action": "BUY",
+      "price": 0.8743499999999998,
+      "size": 18.94736842105265,
+      "status": "PARTIAL",
+      "filledSize": 9.11,
+      "pnl": 0
+    }
+  ],
+  "stats": {
+    "totalTrades": 30,
+    "fillRate": 1,
+    "totalArbProfit": 0.49389000000001276,
+    "totalSlippageCost": 0.9991705263157684,
+    "sessionsRun": 1
+  }
+}
