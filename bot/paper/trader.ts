@@ -1,16 +1,18 @@
 import { fetchRealTicks } from '../integration/real-data'
 import { tickToMarketEvents } from '../ingest/adapter'
-import { applyBookEvent, getDefaultBookState } from '../ingest/orderbook'
+import { applyBookEvent, getDefaultBookState, getTopOfBook } from '../ingest/orderbook'
 import { FeatureEngine } from '../features/engine'
 import { generateOpportunity } from '../signal'
-import { preTradeCheck } from '../risk/pre_trade'
+import { preTradeCheck, type PreTradeContext } from '../risk/pre_trade'
 import { shouldTriggerDrawdownStop } from '../risk/realtime'
 import { kellySize } from '../execution/kelly'
 import { stoikovPriceAdjust } from '../execution/stoikov'
 import { monteCarloPnl } from '../montecarlo/sim'
 import { generateWallet, type PaperWallet } from './wallet'
 import { PaperPortfolio, type PaperOrder } from './portfolio'
+import type { RiskState } from '../contracts/types'
 import { loadConfig, type BotConfig } from '../config'
+
 import { saveSession } from './persistence'
 
 export type PaperTradeLog = {
@@ -87,12 +89,11 @@ export async function runPaperTrading(opts?: {
 
     // Feature extraction
     const feature = featureEngine.build(tick.marketId, tick.ts, book, events)
+    const top = getTopOfBook(book)
     const opp = generateOpportunity(
       feature,
       book,
       tick.ts,
-      config.signal.costBps,
-      config.signal.minEvBps,
     )
 
     if (!opp) {
@@ -100,7 +101,7 @@ export async function runPaperTrading(opts?: {
         tick: tick.ts,
         marketId: tick.marketId,
         action: 'SKIP',
-        detail: `No arb opportunity (yesAsk+noAsk=${(book.yesAsk + book.noAsk).toFixed(4)})`,
+        detail: `No arb opportunity (yesAsk+noAsk=${(top.yesAsk + top.noAsk).toFixed(4)})`,
       })
       continue
     }
@@ -116,7 +117,28 @@ export async function runPaperTrading(opts?: {
     }
 
     // Pre-trade risk check
-    const decision = preTradeCheck(opp, portfolio.openNotional, maxOpenNotional)
+    const riskState: RiskState = {
+      equity: portfolio.equity,
+      peakEquity: portfolio.peakEquity,
+      intradayPnl: portfolio.totalPnl,
+      drawdownPct: portfolio.drawdownPct,
+      openNotional: portfolio.openNotional,
+      pendingNotional: 0,
+      failCount: 0,
+      lastLatencyMs: 10,
+      killSwitchEnabled: false,
+      onlyReduce: false,
+      maxOpenNotional: maxOpenNotional,
+      maxDrawdownPct: config.risk.maxDrawdownPct,
+      maxDailyLossPct: config.risk.intradayStopPct,
+    }
+    const preTradeCtx: PreTradeContext = {
+      riskState,
+      requestedSize: portfolio.equity * 0.05,
+      availableDepthSize: 1_000,
+      latencyMs: 10,
+    }
+    const decision = preTradeCheck(opp, preTradeCtx)
     if (!decision.allow) {
       logs.push({
         tick: tick.ts,
@@ -143,7 +165,7 @@ export async function runPaperTrading(opts?: {
     }
 
     // Kelly sizing (configurable cap)
-    const size = kellySize(opp.evBps, opp.confidence, portfolio.equity, config.execution.kellyCap)
+    const size = kellySize(opp.evBps, opp.confidence, portfolio.equity)
     if (size < 0.01) {
       logs.push({
         tick: tick.ts,
@@ -160,12 +182,12 @@ export async function runPaperTrading(opts?: {
       0,
     )
     const adjYesPrice = stoikovPriceAdjust(
-      book.yesAsk,
+      top.yesAsk,
       inventory,
       config.execution.stoikovRiskAversion,
     )
     const adjNoPrice = stoikovPriceAdjust(
-      book.noAsk,
+      top.noAsk,
       -inventory,
       config.execution.stoikovRiskAversion,
     )

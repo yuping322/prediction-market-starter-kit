@@ -1,40 +1,62 @@
-import { getEvents } from '@/lib/gamma'
+import { getEvents, type Market } from '@/lib/gamma'
 import { parsePrices } from '@/lib/prices'
-import { readFile } from 'node:fs/promises'
+import fallbackEvents from '../fixtures/gamma-events.snapshot.json'
+import type { MarketTokenMap } from '../contracts/types'
 import type { SyntheticTick } from '../ingest/adapter'
+import { buildTokenMap, type ValidationMarketDescriptor } from './exchange'
 
 function clampPrice(value: number): number {
   return Math.max(0.01, Math.min(0.99, value))
 }
 
-export async function fetchRealTicks(limit = 50): Promise<SyntheticTick[]> {
-  let events: Awaited<ReturnType<typeof getEvents>>
+function resolveTokenMap(market: Market): MarketTokenMap {
+  const yesToken = market.tokens?.find((token) => token.outcome.toLowerCase() === 'yes')?.token_id
+  const noToken = market.tokens?.find((token) => token.outcome.toLowerCase() === 'no')?.token_id
+  return buildTokenMap(market.id, yesToken, noToken)
+}
+
+async function loadEvents(limit: number) {
   try {
-    events = await getEvents({ active: true, closed: false, archived: false, limit })
+    return await getEvents({ active: true, closed: false, archived: false, limit })
   } catch {
-    const snapshot = await readFile(new URL('../fixtures/gamma-events.snapshot.json', import.meta.url), 'utf8')
-    events = JSON.parse(snapshot)
+    return fallbackEvents as Awaited<ReturnType<typeof getEvents>>
   }
-  const ticks: SyntheticTick[] = []
-  let ts = 0
+}
+
+export async function fetchValidationMarkets(limit = 50): Promise<ValidationMarketDescriptor[]> {
+  const events = await loadEvents(limit)
+  const markets: ValidationMarketDescriptor[] = []
 
   for (const event of events) {
     for (const market of event.markets ?? []) {
       const [yes, no] = parsePrices(market)
       if (yes <= 0 || no <= 0) continue
-
-      const spread = 0.01
-      ticks.push({
-        ts: ts += 1,
+      markets.push({
         marketId: market.id,
-        yesBid: clampPrice(yes - spread),
-        yesAsk: clampPrice(yes + spread),
-        noBid: clampPrice(no - spread),
-        noAsk: clampPrice(no + spread),
-        volume: Math.max(1, market.volume_24hr || market.volume || 1),
+        question: market.question,
+        tokenMap: resolveTokenMap(market),
+        liquidity: market.liquidity || 0,
+        volume24h: market.volume_24hr || market.volume || 0,
+        yesPrice: yes,
+        noPrice: no,
       })
     }
   }
 
-  return ticks
+  return markets
+}
+
+export async function fetchRealTicks(limit = 50): Promise<SyntheticTick[]> {
+  const markets = await fetchValidationMarkets(limit)
+  return markets.map((market, index) => ({
+    ts: index + 1,
+    marketId: market.marketId,
+    yesBid: clampPrice(market.yesPrice - 0.01),
+    yesAsk: clampPrice(market.yesPrice + 0.01),
+    noBid: clampPrice(market.noPrice - 0.01),
+    noAsk: clampPrice(market.noPrice + 0.01),
+    volume: Math.max(1, market.volume24h || 1),
+    tokenMap: market.tokenMap,
+    source: 'gamma-validation',
+  }))
 }

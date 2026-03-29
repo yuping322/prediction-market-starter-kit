@@ -10,7 +10,7 @@
     "lint": "eslint",
     "format": "prettier --write \"**/*.{ts,tsx}\"",
     "typecheck": "tsc --noEmit",
-    "bot:simulate": "tsx bot/sim/run-simulation.ts",
+    "bot:simulate": "tsx bot/examples/run-synthetic-simulation.ts",
     "bot:test": "tsx bot/sim/test-simulation.ts",
     "bot:example:synthetic": "tsx bot/examples/run-synthetic-simulation.ts",
     "bot:example:real": "tsx bot/examples/run-real-data-validation.ts",
@@ -18,7 +18,11 @@
     "bot:paper": "tsx bot/examples/run-paper-trading.ts",
     "bot:scan": "tsx bot/paper/scanner.ts",
     "bot:autotune": "tsx bot/config/autotune.ts",
-    "bot:daemon": "tsx bot/daemon.ts"
+    "bot:daemon": "tsx bot/daemon.ts",
+    "bot:example:paper": "tsx bot/examples/run-paper-trading.ts",
+    "bot:example:paper-live": "tsx bot/examples/run-paper-live.ts",
+    "bot:example:live": "tsx bot/examples/run-live-engine.ts",
+    "bot:config:update": "tsx bot/offline/update-runtime-config.ts"
   },
   "dependencies": {
     "@hugeicons/core-free-icons": "^4.0.0",
@@ -41,8 +45,8 @@
     "next-themes": "^0.4.6",
     "radix-ui": "^1.4.3",
     "react": "^19.2.4",
-    "react-day-picker": "^9.14.0",
     "react-dom": "^19.2.4",
+    "react-day-picker": "^9.14.0",
     "react-resizable-panels": "^4.7.3",
     "recharts": "2.15.4",
     "server-only": "^0.0.1",
@@ -68,5 +72,6 @@
     "tailwindcss": "^4.2.1",
     "tsx": "^4.21.0",
     "typescript": "^5.9.3"
-  }
+  },
+  "packageManager": "pnpm@10.30.3+sha512.c961d1e0a2d8e354ecaa5166b822516668b7f44cb5bd95122d590dd81922f606f5473b6d23ec4a5be05e7fcd18e8488d47d978bbe981872f1145d06e9a740017"
 }

@@ -4,8 +4,8 @@ import type { SyntheticTick } from '../ingest/adapter'
 import { runEngine } from '../core/run-engine'
 
 function makeTicks(): SyntheticTick[] {
-  return Array.from({ length: 50 }, (_, i) => ({
-    ts: i,
+  return Array.from({ length: 50 }, (_, index) => ({
+    ts: index,
     marketId: 'test',
     yesBid: 0.44,
     yesAsk: 0.45,
@@ -20,4 +20,5 @@ test('pipeline generates opportunities and executions', () => {
   assert.ok(result.opportunities > 0)
   assert.ok(result.executed > 0)
   assert.ok(result.completionRate > 0)
+  assert.ok(result.configVersion.length > 0)
 })

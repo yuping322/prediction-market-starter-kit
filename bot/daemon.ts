@@ -18,10 +18,10 @@
 
 import { fetchRealTicks } from './integration/real-data'
 import { tickToMarketEvents, type SyntheticTick } from './ingest/adapter'
-import { applyBookEvent, getDefaultBookState, type BookState } from './ingest/orderbook'
+import { applyBookEvent, getDefaultBookState, getTopOfBook, type BookState } from './ingest/orderbook'
 import { FeatureEngine } from './features/engine'
 import { generateOpportunity } from './signal'
-import { preTradeCheck } from './risk/pre_trade'
+import { preTradeCheck, type PreTradeContext } from './risk/pre_trade'
 import { kellySize } from './execution/kelly'
 import { stoikovPriceAdjust } from './execution/stoikov'
 import { monteCarloPnl } from './montecarlo/sim'
@@ -30,6 +30,7 @@ import { generateWallet } from './paper/wallet'
 import { saveSession, loadSession } from './paper/persistence'
 import { loadConfig, resetConfigCache, type BotConfig } from './config'
 import { autotune } from './config/autotune'
+import type { RiskState } from './contracts/types'
 
 const CYCLE_INTERVAL = 5 * 60 * 1000 // 5 minutes
 const TUNE_EVERY_N_CYCLES = 12        // auto-tune every ~1 hour
@@ -90,14 +91,35 @@ async function runCycle(
     }
 
     const feature = featureEngine.build(tick.marketId, tick.ts, book, events)
-    const opp = generateOpportunity(feature, book, tick.ts, config.signal.costBps, config.signal.minEvBps)
+    const opp = generateOpportunity(feature, book, tick.ts)
 
     if (!opp || opp.confidence < config.signal.confidenceThreshold) {
       skips += 1
       continue
     }
 
-    const decision = preTradeCheck(opp, portfolio.openNotional, config.portfolio.maxOpenNotional)
+    const riskState: RiskState = {
+      equity: portfolio.equity,
+      peakEquity: portfolio.peakEquity,
+      intradayPnl: portfolio.totalPnl,
+      drawdownPct: portfolio.drawdownPct,
+      openNotional: portfolio.openNotional,
+      pendingNotional: 0,
+      failCount: 0,
+      lastLatencyMs: 10,
+      killSwitchEnabled: false,
+      onlyReduce: false,
+      maxOpenNotional: config.portfolio.maxOpenNotional,
+      maxDrawdownPct: config.risk.maxDrawdownPct,
+      maxDailyLossPct: config.risk.intradayStopPct,
+    }
+    const preTradeCtx: PreTradeContext = {
+      riskState,
+      requestedSize: portfolio.equity * 0.05,
+      availableDepthSize: 1_000,
+      latencyMs: 10,
+    }
+    const decision = preTradeCheck(opp, preTradeCtx)
     if (!decision.allow) {
       blocks += 1
       continue
@@ -110,14 +132,15 @@ async function runCycle(
       break
     }
 
-    const size = kellySize(opp.evBps, opp.confidence, portfolio.equity, config.execution.kellyCap)
+    const size = kellySize(opp.evBps, opp.confidence, portfolio.equity)
     if (size < 0.01) { skips += 1; continue }
 
     const inventory = Array.from(portfolio.positions.values()).reduce(
       (acc, p) => acc + (p.side === 'YES' ? p.size : -p.size), 0,
     )
-    const adjYes = stoikovPriceAdjust(book.yesAsk, inventory, config.execution.stoikovRiskAversion)
-    const adjNo = stoikovPriceAdjust(book.noAsk, -inventory, config.execution.stoikovRiskAversion)
+    const top = getTopOfBook(book)
+    const adjYes = stoikovPriceAdjust(top.yesAsk, inventory, config.execution.stoikovRiskAversion)
+    const adjNo = stoikovPriceAdjust(top.noAsk, -inventory, config.execution.stoikovRiskAversion)
 
     portfolio.executeTrade(tick.marketId, 'YES', adjYes, size / 2, tick.ts,
       config.execution.slippageBps, config.execution.partialFillBaseRate, config.execution.partialFillSizeDecay)

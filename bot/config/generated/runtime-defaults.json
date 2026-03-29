@@ -1,0 +1,73 @@
+{
+  "version": "2026.03.27-p0",
+  "generatedAt": "2026-03-27T00:00:00.000Z",
+  "approval": {
+    "status": "approved",
+    "approvedBy": "roadmap-bootstrap"
+  },
+  "modeDefaults": {
+    "executionMode": "paper",
+    "confidenceFilterEnabled": true
+  },
+  "strategies": {
+    "staticArb": {
+      "costBps": 20,
+      "minEvBps": 5,
+      "ttlMs": 3000,
+      "maxSlippageBps": 30
+    }
+  },
+  "risk": {
+    "maxOpenNotional": 1000,
+    "maxDailyLossPct": 2,
+    "maxDrawdownPct": 4,
+    "maxFailCount": 3,
+    "onlyReduceAfterFailCount": 2,
+    "maxLatencyMs": 250,
+    "maxSize": 100
+  },
+  "execution": {
+    "passiveFillRatio": 0.68,
+    "hedgeFillRatio": 0.98,
+    "priceImprovementBps": 4,
+    "passivePriceOffset": 0.002,
+    "allowIocHedge": true
+  },
+  "live": {
+    "reconnectBackoffMs": 1500,
+    "maxReconnectBackoffMs": 15000,
+    "staleAfterMs": 20000,
+    "orderSyncIntervalMs": 10000
+  },
+  "markets": {
+    "whitelist": [],
+    "refreshIntervalMs": 900000
+  },
+  "models": {
+    "bayesian": {
+      "enabled": true,
+      "minConfidence": 0.1,
+      "imbalanceWeight": 0.3,
+      "spreadWeight": -0.05
+    },
+    "stoikov": {
+      "riskAversion": 0.002,
+      "inventoryWeight": 1,
+      "volatilityWeight": 0.5
+    },
+    "kelly": {
+      "maxFraction": 0.02,
+      "minFraction": 0,
+      "confidenceScale": 1
+    },
+    "monteCarlo": {
+      "runs": 200,
+      "slippageShockBps": 15,
+      "latencyShockMs": 120
+    }
+  },
+  "rollout": {
+    "paperMinCompletionRate": 0.95,
+    "paperMinNetEvBps": 0
+  }
+}

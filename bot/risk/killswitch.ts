@@ -1,9 +1,31 @@
-let killSwitchEnabled = false
-
-export function setKillSwitch(value: boolean): void {
-  killSwitchEnabled = value
+export type KillSwitchState = {
+  enabled: boolean
+  onlyReduce: boolean
+  reason?: string
+  activatedAt?: number
 }
 
-export function isKillSwitchEnabled(): boolean {
-  return killSwitchEnabled
+let killSwitchState: KillSwitchState = {
+  enabled: false,
+  onlyReduce: false,
+}
+
+export function activateKillSwitch(reason: string, ts = Date.now(), onlyReduce = true): void {
+  killSwitchState = {
+    enabled: true,
+    onlyReduce,
+    reason,
+    activatedAt: ts,
+  }
+}
+
+export function clearKillSwitch(): void {
+  killSwitchState = {
+    enabled: false,
+    onlyReduce: false,
+  }
+}
+
+export function getKillSwitchState(): KillSwitchState {
+  return { ...killSwitchState }
 }

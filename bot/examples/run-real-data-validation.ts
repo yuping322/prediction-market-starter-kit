@@ -3,11 +3,12 @@ import { tickToMarketEvents } from '../ingest/adapter'
 import { applyBookEvent, getDefaultBookState } from '../ingest/orderbook'
 import { FeatureEngine } from '../features/engine'
 import { generateOpportunity } from '../signal'
-import { preTradeCheck } from '../risk/pre_trade'
+import { preTradeCheck, type PreTradeContext } from '../risk/pre_trade'
 import { shouldTriggerDrawdownStop } from '../risk/realtime'
-import { executeOpportunity } from '../execution/orchestrator'
+import { executeOpportunity, type ExecutionContext } from '../execution/orchestrator'
 import { collectMetrics } from '../metrics/collector'
 import { monteCarloPnl } from '../montecarlo/sim'
+import type { RiskState } from '../contracts/types'
 
 async function main(): Promise<void> {
   console.log('=== Polymarket Arbitrage Bot — Real Data Validation ===\n')
@@ -40,6 +41,22 @@ async function main(): Promise<void> {
   let executed = 0
   let totalPnl = 0
   let blocked = 0
+  const metricEvents: import('../contracts/types').MetricEvent[] = []
+  const riskState: RiskState = {
+    equity,
+    peakEquity: equity,
+    intradayPnl: totalPnl,
+    drawdownPct: 0,
+    openNotional: 0,
+    pendingNotional: 0,
+    failCount: 0,
+    lastLatencyMs: 10,
+    killSwitchEnabled: false,
+    onlyReduce: false,
+    maxOpenNotional: 1_000,
+    maxDrawdownPct: -20,
+    maxDailyLossPct: -10,
+  }
 
   for (const tick of ticks) {
     const events = tickToMarketEvents(tick)
@@ -53,7 +70,13 @@ async function main(): Promise<void> {
     if (!opp) continue
 
     opportunities += 1
-    const decision = preTradeCheck(opp, Math.abs(inventory), 1_000)
+    const preTradeCtx: PreTradeContext = {
+      riskState,
+      requestedSize: equity * 0.05,
+      availableDepthSize: 1_000,
+      latencyMs: 10,
+    }
+    const decision = preTradeCheck(opp, preTradeCtx)
     if (!decision.allow) {
       blocked += 1
       console.log(`  [BLOCKED] ${tick.marketId} — ${decision.reason}`)
@@ -67,13 +90,20 @@ async function main(): Promise<void> {
       continue
     }
 
-    const execResult = executeOpportunity(opp, equity, inventory)
+    const execCtx: ExecutionContext = {
+      equity,
+      inventory,
+      riskDecision: decision,
+      now: tick.ts,
+    }
+    const execResult = executeOpportunity(opp, execCtx)
     if (execResult.updates.length === 0) continue
 
     executed += 1
     totalPnl += execResult.pnl
     equity += execResult.pnl
     inventory += execResult.updates[0].filledSize
+    metricEvents.push(...execResult.metrics)
 
     const fill = execResult.updates[0]
     console.log(
@@ -85,7 +115,7 @@ async function main(): Promise<void> {
   }
 
   // Summary
-  const metrics = collectMetrics(opportunities, executed, totalPnl)
+  const metrics = collectMetrics({ opportunities, executed, totalPnl, metricEvents, riskState })
   const mc = monteCarloPnl(totalPnl)
 
   console.log('\n--- Results Summary ---')
