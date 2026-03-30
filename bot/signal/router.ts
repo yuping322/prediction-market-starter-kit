@@ -88,6 +88,15 @@ export class StrategyRouter {
     }
     this.opportunityGenerators = new Map()
     this.opportunityGenerators.set("static_arb", this.defaultStaticArbGenerator)
+    this.opportunityGenerators.set("stat_arb", this.defaultStatArbGenerator)
+    this.opportunityGenerators.set(
+      "microstructure",
+      this.defaultMicrostructureGenerator
+    )
+    this.opportunityGenerators.set(
+      "term_structure",
+      this.defaultTermStructureGenerator
+    )
     this.initializeDefaultStrategies()
   }
 
@@ -115,6 +124,42 @@ export class StrategyRouter {
       now,
       DEFAULT_STATIC_ARB_CONFIG
     )
+  }
+
+  private defaultStatArbGenerator: StrategyOpportunityGenerator = (
+    feature: FeatureSnapshot,
+    book: BookState,
+    now: number
+  ): Opportunity | null => {
+    return null // stat_arb requires pair market data, handled separately
+  }
+
+  private defaultMicrostructureGenerator: StrategyOpportunityGenerator = (
+    feature: FeatureSnapshot,
+    book: BookState,
+    now: number
+  ): Opportunity | null => {
+    // Simple microstructure signal based on imbalance
+    const imbalance = feature.imbalanceL1
+    if (Math.abs(imbalance) < 0.3) return null
+
+    return {
+      id: `${feature.marketId}-micro-${now}`,
+      strategy: "microstructure",
+      marketIds: [feature.marketId],
+      evBps: Math.abs(imbalance) * 100,
+      confidence: Math.abs(imbalance),
+      ttlMs: 2000,
+      createdAt: now,
+    }
+  }
+
+  private defaultTermStructureGenerator: StrategyOpportunityGenerator = (
+    feature: FeatureSnapshot,
+    book: BookState,
+    now: number
+  ): Opportunity | null => {
+    return null // term_structure requires multiple expiry data, handled separately
   }
 
   registerStrategy(config: StrategyConfig): void {
